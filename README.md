@@ -16,8 +16,8 @@ Personal Claude Code configuration: agents, commands, and skills.
 
 ```bash
 mkdir -p ~/claude-config
-git clone https://github.com/billmiddelbosch/claude-config.git ~/claude-config
 cd ~/claude-config
+git clone https://github.com/billmiddelbosch/claude-config.git
 chmod +x install.sh
 ./install.sh
 ```
