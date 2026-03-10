@@ -14,13 +14,25 @@ Personal Claude Code configuration: agents, commands, and skills.
 
 ## Install
 
+### macOS / Linux
+
 ```bash
 git clone https://github.com/billmiddelbosch/claude-config.git
 chmod +x install.sh
 ./install.sh
 ```
 
-This creates symlinks from `~/.claude/{agents,commands,skills}` to this repo.
+### Windows
+
+```powershell
+git clone https://github.com/billmiddelbosch/claude-config.git
+cd claude-config
+.\install.ps1
+```
+
+---
+
+This creates symlinks (or junctions on Windows) from `~/.claude/{agents,commands,skills}` to this repo.
 A `git pull` is all you need to update on any machine.
 
 ## Update
