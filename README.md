@@ -41,3 +41,14 @@ A `git pull` is all you need to update on any machine.
 cd ~/claude-config
 git pull
 ```
+
+## Claude structure
+
+### local
+\Users\<user>\.claude\
+- Folders /agents /commands /skills link to /Gebruikers/<user>/claude-config
+
+\Users\<user>\.claude\plugins\cache\claude-plugins-official"
+- Also consist of agents, commands and skills
+
+
