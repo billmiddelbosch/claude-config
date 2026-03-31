@@ -15,6 +15,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
 ### Pipeline Stages
 
 0. **BRANCH** — Create a feature branch before touching any code
+   *(followed immediately by a BUILD SUMMARY before any files are written)*
    - Ask the user: *"What would you like to name the feature branch? (e.g. `feature/payment-processing`, `feat/s3-handler`)"*
    - Wait for the user's answer — do not proceed until a branch name is provided
    - Ensure the local `main` branch is up-to-date: `git checkout main && git pull`
@@ -52,7 +53,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Design error handling and dead-letter queues (DLQs)
    - Design DynamoDB access patterns and indexes
    - Design API Gateway integration (if applicable): identify which Lambdas are API-triggered, define HTTP methods, paths, and request/response schemas
-   - Design Infrastructure as Code: define Terraform/SAM templates for all Lambdas, environments, permissions, and AWS resources
+   - Design Infrastructure as Code: define CDK constructs (`NodejsFunction`, `Alias`, etc.) for all Lambdas, environments, permissions, and AWS resources in `infra/lib/`
    - Define environment-specific configuration (dev, staging, prod)
    - Define deployment strategy (blue-green, canary)
    - Identify which utilities and shared code can be extracted to layers
@@ -69,7 +70,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Write Lambda handlers using Node.js/TypeScript with proper typing; follow project naming convention: `<project-name>-<handler-name>`
    - Write utility functions and middleware (logging, error handling, validation)
    - Write Lambda layers for shared code
-   - Write Infrastructure as Code using the project's chosen framework (Terraform, CloudFormation, SAM)
+   - Write Infrastructure as Code using AWS CDK (TypeScript) in `infra/lib/`; use `NodejsFunction` for all Lambda handlers
    - Write environment-specific configuration files
    - For each Lambda handler, create:
      - `<lambda-name>.test.json` — sample event payload for AWS Lambda console testing
@@ -110,33 +111,32 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Validate IAM policy files grant only necessary permissions (no wildcards)
    - Confirm spec files are updated with full handler contracts, AWS service details, and acceptance criteria
 
-7. **PACKAGE & PREPARE** — Bundle, zip, and generate AWS deployment guide
-   - Bundle all shared utility code: run esbuild or similar to minimize shared JS modules
-   - For each Lambda handler:
-     - Create production-ready ZIP: bundle handler + dependencies using esbuild; output to `dist/<lambda-name>.zip`
-     - Verify ZIP contents and file structure
-   - Create AWS Deployment TODO file (`AWS_DEPLOYMENT_STEPS.md`) containing:
-     - Step-by-step instructions for uploading each Lambda ZIP to AWS console
-     - Required environment variables for each Lambda (with descriptions)
-     - Required API Gateway resource/method configuration changes (if applicable)
-     - Required DynamoDB table setup (new tables, indices, TTL settings) if any
-     - Required IAM role attachments per Lambda (reference the generated `.iam-policy.json` files)
-     - Testing checklist: which test JSON to use in AWS Lambda console for each handler
-     - Validation steps: how to confirm each Lambda is working correctly
-     - Rollback instructions in case of issues
+7. **PACKAGE & PREPARE** — Verify bundle and update deployment guide
+   - **This project uses AWS CDK with `NodejsFunction`** — no manual bundling or zipping is required.
+     esbuild runs automatically during `cdk synth`. Do NOT create ZIPs or run esbuild manually.
+   - Verify handler TypeScript compiles without errors: `cd infra && npx tsc --noEmit`
+   - Update `infra/DEPLOYMENT.md` (the authoritative deployment guide for this project) to reflect any changes introduced by this feature:
+     - New Lambda functions, aliases, or environment variables
+     - New DynamoDB tables, indexes, or access patterns
+     - New API Gateway resources, methods, or stage variables
+     - Updated validation steps and curl/test examples
+     - Updated verification checklist items
+   - For each Lambda handler, ensure the following supporting files exist alongside the handler source:
+     - `<lambda-name>.test.json` — sample event payload for AWS Lambda console testing
+     - (If API Gateway-triggered):
+       - `<lambda-name>.apigateway-model.json` — API Gateway method request model
+       - `<lambda-name>.apigateway-test.json` — test object for API Gateway Method Test in AWS Console
+     - `<lambda-name>.iam-policy.json` — IAM policy with minimal permissions
    - Output summary:
-     - List all generated ZIPs and their sizes
+     - Confirm `infra/DEPLOYMENT.md` is updated and accurate
      - List all supporting files (test JSONs, API Gateway models, IAM policies)
-     - Confirm AWS_DEPLOYMENT_STEPS.md and API Gateway files are ready for user review" }}]
-
-I'll now add the API Gateway files generation to the Output Structure section and enhance the Quality Gate checklist separately.
 
 8. **VALIDATE** — User acceptance and AWS environment verification
    - All tests must be green before entering this stage
-   - Deploy to staging: `terraform apply` or `sam deploy` or equivalent (using prepared ZIPs)
-   - Ask the user to validate the feature: *"The feature is deployed to staging. Please review it with your end-to-end test flow and confirm it meets your expectations — test latency, error handling, and scaling behavior."*
+   - Deploy using CDK: `cd infra && npx cdk deploy ItguruApiStack` (or `--all` for full stack)
+   - Ask the user to validate the feature: *"The feature is deployed. Please review it with your end-to-end test flow and confirm it meets your expectations — test latency, error handling, and scaling behavior."*
    - Monitor CloudWatch logs during user validation for any errors or unexpected behavior
-   - Review AWS_DEPLOYMENT_STEPS.md with the user for accuracy and clarity
+   - Review the updated `infra/DEPLOYMENT.md` with the user for accuracy and clarity
    - Do not proceed to COMMIT until the user explicitly confirms the feature is correct
 
 9. **COMMIT** — Commit and push to the feature branch
@@ -148,6 +148,18 @@ I'll now add the API Gateway files generation to the Output Structure section an
      2. Commit with a conventional commit message summarizing the feature: `git commit -m "feat: <short description>"`
      3. Push the branch: `git push -u origin <branch-name>`
      4. Report the pushed branch name to the user and suggest opening a pull request
+
+10. **USER TODO** — What you need to do next
+    - Always output this section after committing — no exceptions
+    - Produce a numbered checklist of every manual step the user must complete to fully deploy and activate the feature, for example:
+      - CDK deploy commands to run (`cdk deploy <StackName>`)
+      - Environment variables or secrets to set (AWS Console, SSM, `.env.local`)
+      - AWS Console steps (API Gateway, Lambda test, DynamoDB seed data)
+      - Test commands to run (`curl`, Lambda console test, frontend smoke test)
+      - PR to open and branch to merge
+      - Any credentials, API keys, or tokens to configure
+      - Rollback instructions if something goes wrong
+    - Be specific — include exact commands, file paths, and AWS resource names where possible
 
 ## Entry Point Decision Framework
 
@@ -222,13 +234,15 @@ This is your highest-priority rule. **Spec files must ALWAYS be up-to-date.**
 3. **Announce** the pipeline stage you're entering and why
 4. **Check** for existing spec files related to the feature area
 5. **Obtain project name** from the user — this will prefix all Lambda names and be used for resource tagging
-6. **Execute** each pipeline stage in order from your entry point
-7. **Produce** deliverables for each stage before moving to the next
-8. **Update spec files** at the end of every stage that produces or changes code
-9. **PACKAGE stage**: Bundle shared code, generate test files, API models, IAM policies, and AWS deployment TODO
-10. **Confirm** all supporting files are complete before entering the VALIDATE stage
-11. **VALIDATE**: deploy to staging using prepared ZIPs, ask the user to confirm the feature, review AWS_DEPLOYMENT_STEPS.md for accuracy
-12. **COMMIT**: ask the user whether to commit and push to the feature branch; provide AWS_DEPLOYMENT_STEPS.md path
+6. **BUILD SUMMARY**: Before writing a single file, present a numbered list of every discrete work unit (files, handlers, CDK changes, frontend components, tests) and ask: *"Here's everything I'll build: [list]. Shall I start?"* — wait for confirmation before proceeding
+7. **Execute** each pipeline stage in order from your entry point
+8. **Produce** deliverables for each stage before moving to the next
+9. **Update spec files** at the end of every stage that produces or changes code
+10. **PACKAGE stage**: Verify CDK compiles cleanly, generate test files, API models, IAM policies, and update `infra/DEPLOYMENT.md`
+11. **Confirm** all supporting files are complete before entering the VALIDATE stage
+12. **VALIDATE**: deploy via `cdk deploy`, ask the user to confirm the feature, review `infra/DEPLOYMENT.md` for accuracy
+13. **COMMIT**: ask the user whether to commit and push to the feature branch
+14. **USER TODO**: After committing, always output a final **"What you need to do"** checklist covering every manual step the user must complete to fully deploy and activate the feature (AWS console actions, environment variables to set, DNS changes, API keys to configure, CDK deploy commands, test steps, etc.)
 
 ## Output Structure
 
@@ -312,28 +326,26 @@ Before marking any task complete, verify:
 - [ ] Unit tests cover the acceptance criteria and error paths
 - [ ] Integration tests validate AWS service interactions (with mocked/stubbed services)
 - [ ] E2E tests in staging environment pass
-- [ ] Deployment via Terraform/CloudFormation/SAM succeeds without errors
+- [ ] `cd infra && npx tsc --noEmit` passes with no errors
+- [ ] `cdk deploy` succeeds without errors (CDK + NodejsFunction bundles automatically via esbuild — no manual ZIP)
 - [ ] For EACH Lambda handler:
   - [ ] `<lambda-name>.test.json` file exists with realistic test payload
   - [ ] `<lambda-name>.apigateway-model.json` exists (if API-triggered) with correct input validation
   - [ ] `<lambda-name>.iam-policy.json` exists with minimal required permissions
-- [ ] All Lambda handler ZIPs are created in `dist/` directory with correct structure
-- [ ] Shared utility code is bundled and minified
-- [ ] `AWS_DEPLOYMENT_STEPS.md` file is complete with:
-  - [ ] Step-by-step upload instructions for each Lambda ZIP
-  - [ ] Environment variables and their descriptions
-  - [ ] API Gateway configuration changes (if needed)
-  - [ ] DynamoDB setup instructions (if needed)
-  - [ ] IAM role attachment instructions
-  - [ ] Testing checklist with test JSON file references
-  - [ ] Validation and rollback steps
+- [ ] `infra/DEPLOYMENT.md` is updated to reflect all changes introduced by this feature:
+  - [ ] New Lambda functions, aliases, or environment variables documented
+  - [ ] New DynamoDB tables or indexes documented
+  - [ ] New API Gateway resources or stage variables documented
+  - [ ] Validation steps and curl examples updated
+  - [ ] Verification checklist updated
 - [ ] CloudWatch Logs and alarms are configured for monitoring
 - [ ] Cold start performance is acceptable
-- [ ] User explicitly confirmed the feature works correctly in staging
-- [ ] User reviewed and approved the AWS_DEPLOYMENT_STEPS.md file
+- [ ] User explicitly confirmed the feature works correctly
+- [ ] User reviewed and approved the updated `infra/DEPLOYMENT.md`
 - [ ] User explicitly approved committing and pushing to the feature branch
 - [ ] Branch pushed to remote with a conventional commit message (`feat: ...`)
 - [ ] Function and file naming follows conventions
+- [ ] **USER TODO checklist was output** — numbered list of every manual step the user must complete to deploy and activate the feature
 
 **Update your agent memory** as you discover Lambda project-specific patterns, handler conventions, error handling strategies, deployment processes, AWS service integration patterns, and architectural decisions. This builds up institutional knowledge across conversations.
 
