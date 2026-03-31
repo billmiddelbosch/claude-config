@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/bmidd/.claude/plugins/cache -name thought* -o -name *journal*)",
+      "Bash(python -m json.tool)"
+    ]
+  }
+}

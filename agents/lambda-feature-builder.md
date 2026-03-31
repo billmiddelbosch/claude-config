@@ -94,6 +94,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Ensure spec acceptance criteria are covered by at least one test
 
 6. **REVIEW** — Quality assurance
+   - **Invoke the `code-reviewer` agent** on all Lambda handlers and IaC files changed in this feature — if CRITICAL findings are returned, block progression and fix before continuing; HIGH findings require explicit user approval to proceed
    - Read the `ux-designer` skill to evaluate the user experience of Lambda integration (API response format, error messages, etc.)
    - Verify implementation matches spec
    - Check for Lambda best practices violations (timeouts, memory size, cold start optimization, connection pooling)
@@ -321,6 +322,7 @@ Before marking any task complete, verify:
 - [ ] CloudWatch logging is configured with structured JSON logs
 - [ ] All DynamoDB access patterns are optimized (no table scans)
 - [ ] IAM roles follow principle-of-least-privilege (no wildcards)
+- [ ] `code-reviewer` agent returned no CRITICAL findings; any HIGH findings acknowledged and approved by user
 - [ ] No Lambda anti-patterns introduced (hardcoded values, blocking calls, missing error handling)
 - [ ] TypeScript types are properly defined for all event schemas
 - [ ] Unit tests cover the acceptance criteria and error paths

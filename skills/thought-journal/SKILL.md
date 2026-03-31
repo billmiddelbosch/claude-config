@@ -163,7 +163,62 @@ Alle dagboekentries over dit thema, meest recent bovenaan.
 
 **Commit message**: `journal: update theme index [thema-slug]`
 
-### Step 8: Confirm in Chat (in Dutch)
+### Step 8: Update Master README Index
+
+Fetch the existing README using:
+```
+mcp__github__get_file_contents: repo:billmiddelbosch/thought-journal path:README.md
+```
+
+**If exists**: retrieve content + SHA. Find the entries table (between `<!-- ENTRIES_START -->` and `<!-- ENTRIES_END -->` markers) and prepend a new row for this entry.
+**If not**: create the full README from scratch using the template below.
+
+**README.md format**:
+```markdown
+# Thought Journal — Bill Middelbosch
+
+Persoonlijk dagboek van inzichten, reflecties en ideeën. Opgeslagen als Markdown — bruikbaar als bron voor NotebookLM, blogs en LinkedIn posts.
+
+## Statistieken
+- **Totaal entries**: [N]
+- **Laatste entry**: [YYYY-MM-DD]
+- **Thema's**: Filosofie & Betekenis · Creativiteit & Expressie · Mensen & Relaties · Werk & Ambitie · Natuur & Wetenschap · Zelf & Groei · Samenleving & Verandering · Gezondheid & Lichaam · Technologie & Toekomst
+
+---
+
+## Alle Entries
+
+<!-- ENTRIES_START -->
+| Datum | Thema | Samenvatting |
+|-------|-------|--------------|
+| [YYYY-MM-DD](entries/YYYY-MM-DD-slug.md) | [Thema] | [One-line samenvatting] |
+<!-- ENTRIES_END -->
+
+---
+
+## Gegenereerde Content
+
+<!-- OUTPUT_START -->
+| Datum | Type | Titel |
+|-------|------|-------|
+| [YYYY-MM-DD](output/filename.md) | Blog / LinkedIn | [Titel of slug] |
+<!-- OUTPUT_END -->
+
+---
+
+*Gegenereerd door Claude · Bronbestanden in `entries/` · Gegenereerde content in `output/`*
+```
+
+When updating an existing README:
+- Increment the entry count in the Statistieken section
+- Update "Laatste entry" date
+- Prepend the new row **after** `<!-- ENTRIES_START -->` (most recent first)
+
+**Commit message**: `journal: update README index`
+
+---
+
+### Step 9: Confirm in Chat (in Dutch)
 
 ```
 ✅ Opgeslagen in GitHub onder **[Thema]**
@@ -229,7 +284,7 @@ Fetch all relevant entry files via `mcp__github__get_file_contents`.
 - Outro: Open vraag aan luisteraar
 - Tijdsinschatting: ~1 minuut per 150 woorden
 
-### Step 3: Save Output to GitHub
+### Step 3: Save Output to GitHub and Update README Index
 
 Commit generated content to `output/` using `mcp__github__create_or_update_file`:
 - **repo**: `billmiddelbosch/thought-journal`
@@ -238,6 +293,12 @@ Commit generated content to `output/` using `mcp__github__create_or_update_file`
 - **branch**: `main`
 
 Update the relevant theme index to reference the new output file.
+
+Then fetch `README.md` and prepend a new row to the output table (between `<!-- OUTPUT_START -->` and `<!-- OUTPUT_END -->` markers):
+```
+| [YYYY-MM-DD](output/filename.md) | [Blog / LinkedIn / Podcast] | [Titel of slug] |
+```
+Commit with message: `journal: update README output index`
 
 ### Step 4: Present to User
 

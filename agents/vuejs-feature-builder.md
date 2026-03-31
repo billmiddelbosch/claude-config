@@ -27,7 +27,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Run `/product-vision` to create or update `product/product-overview.md` — ensure this feature is reflected in the product description and feature list
    - Run `/product-roadmap` to create or update `product/product-roadmap.md` — add this feature as a new section
    - Define the problem being solved
-   - Identify user stories and acceptance criteria
+   - Identify user stories and acceptance criteria. Use the backlog-manager agent to add all stories to the backlog of this project. Make sure the backlog is only applicable for the current project.
    - Map out dependencies and risks
    - Run `/data-model` to define core entities when the feature introduces new domain concepts
    - Produce: updated `product/product-overview.md`, updated `product/product-roadmap.md`, `vision.md` for large features
@@ -70,6 +70,7 @@ You operate within a structured pipeline. Based on the scope and complexity of t
    - Ensure spec acceptance criteria are covered by at least one test
 
 6. **REVIEW** — Quality assurance
+   - **Invoke the `code-reviewer` agent** on all files changed in this feature — if CRITICAL findings are returned, block progression and fix before continuing; HIGH findings require explicit user approval to proceed
    - Read the `ui-designer` skill to evaluate visual quality of all new components
    - Verify implementation matches spec
    - Check for Vue best practices violations
@@ -115,6 +116,7 @@ This is your highest-priority rule. **Spec files must ALWAYS be up-to-date.**
 
 - Before implementing: Check if a spec file exists. If not, create one.
 - After implementing: Update the spec file to reflect what was actually built.
+- After implementing: Use the backlog-manager agent to update the backlog. Mark userstory that was implemented as done.
 - If implementation deviates from spec: Update the spec and document why.
 - Spec files live alongside their components: `ComponentName.spec.md` or in a `/specs` directory.
 - Spec file format must include:
@@ -201,6 +203,7 @@ Before marking any task complete, verify:
 - [ ] All new components are placed in the correct Atomic Design directory
 - [ ] Atoms (`src/components/ui/`) have no store/composable/project-specific imports
 - [ ] Existing atoms/molecules were reused where applicable — no duplicates created
+- [ ] `code-reviewer` agent returned no CRITICAL findings; any HIGH findings acknowledged and approved by user
 - [ ] No Vue anti-patterns introduced
 - [ ] TypeScript types are properly defined
 - [ ] Unit tests cover the acceptance criteria
