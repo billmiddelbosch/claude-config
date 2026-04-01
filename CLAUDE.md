@@ -30,9 +30,11 @@ Applies to all projects unless a project-level `CLAUDE.md` states otherwise.
 - **Default AWS region: eu-west-2 (London)**
 
 ### Tooling
-- npm, Vite (frontend), esbuild (Lambda bundling via CDK)
+- npm (only package manager — no bun, no pnpm, no yarn)
+- Vite (frontend), esbuild (Lambda bundling via CDK)
 - ESLint flat config + Prettier: no semicolons, single quotes, 2-space indent, 100-char width, trailing commas, LF line endings
 - Path alias `@/*` → `./src/*`
+- CDK is not globally installed — always use `npx cdk`, never bare `cdk`
 
 ### Project Structure
 ```
@@ -47,6 +49,19 @@ project-root/
   knowledge/    # Project-scoped knowledge domains
   decisions/    # Architecture decision records
 ```
+
+---
+
+## Workstation
+
+- **OS**: Windows 11 Pro
+- **Shell**: Git Bash — Claude Code runs here; use Unix path syntax (`/c/Users/...`, forward slashes)
+- **Scripting**: PowerShell 5.1 (`powershell`) for automation scripts — **Python is not installed, never suggest it**
+- **PowerShell version**: 5.1 only — `pwsh` (PowerShell 7) is not installed
+- **Node.js**: v24 / npm 11
+- **AWS CLI**: installed and configured
+- **CDK**: not globally installed — always `npx cdk`
+- **No WSL**, no bun, no pnpm, no Python
 
 ---
 
