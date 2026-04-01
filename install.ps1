@@ -15,14 +15,14 @@ if (-not (Test-Path $CLAUDE_DIR)) {
 $dirs = @("agents", "commands", "skills")
 foreach ($dir in $dirs) {
     $source = Join-Path $REPO_DIR $dir
-    
+
     # Skip if source directory doesn't exist
     if (-not (Test-Path $source)) {
         continue
     }
-    
+
     $target = Join-Path $CLAUDE_DIR $dir
-    
+
     # Handle existing symlink
     if ((Get-Item $target -ErrorAction SilentlyContinue) -is [System.IO.DirectoryInfo]) {
         $linkTarget = (Get-Item $target).LinkTarget
@@ -38,10 +38,38 @@ foreach ($dir in $dirs) {
             Move-Item $target $backup
         }
     }
-    
+
     # Create new junction (doesn't require admin)
     New-Item -ItemType Junction -Path $target -Target $source -Force | Out-Null
     Write-Host "  Linked: ~/.claude/$dir → $source"
+}
+
+# Install individual files as hardlinks (no admin required, same drive)
+$files = @("settings.json", "CLAUDE.md")
+foreach ($file in $files) {
+    $source = Join-Path $REPO_DIR $file
+
+    if (-not (Test-Path $source)) {
+        continue
+    }
+
+    $target = Join-Path $CLAUDE_DIR $file
+
+    if (Test-Path $target) {
+        $existing = Get-Item $target -Force
+        if ($existing.LinkType -eq "HardLink") {
+            Write-Host "  Replacing existing hardlink: $file"
+        } else {
+            $timestamp = Get-Date -Format "yyyyMMddHHmmss"
+            $backup = "$target.bak.$timestamp"
+            Write-Host "  Backing up existing $file → $backup"
+            Move-Item $target $backup
+        }
+        Remove-Item $target -Force
+    }
+
+    New-Item -ItemType HardLink -Path $target -Target $source | Out-Null
+    Write-Host "  Linked: ~/.claude/$file → $source"
 }
 
 Write-Host ""
